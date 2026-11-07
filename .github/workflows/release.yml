@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux-x86_64
+            bin: tabula
+            archive: tar.gz
+          - os: windows-latest
+            name: windows-x86_64
+            bin: tabula.exe
+            archive: zip
+          - os: macos-latest
+            name: macos-aarch64
+            bin: tabula
+            archive: tar.gz
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libgl1-mesa-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release --locked
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          mkdir -p dist/tabula
+          cp target/release/${{ matrix.bin }} README.md LICENSE dist/tabula/
+          tar -C dist -czf tabula-${{ matrix.name }}.tar.gz tabula
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/tabula | Out-Null
+          Copy-Item target/release/${{ matrix.bin }}, README.md, LICENSE dist/tabula/
+          Compress-Archive -Path dist/tabula -DestinationPath tabula-${{ matrix.name }}.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tabula-${{ matrix.name }}
+          path: tabula-${{ matrix.name }}.${{ matrix.archive }}
+
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          body: |
+            See [CHANGELOG.md](https://github.com/AhmAbd/LibreExcel/blob/main/CHANGELOG.md) for details.
+
+            **Downloads:** Linux (`tar.gz`), Windows (`zip`) and macOS Apple Silicon (`tar.gz`). The binaries are not signed.

@@ -2,6 +2,15 @@
 name = "tabula"
 version = "0.1.0"
 edition = "2021"
+description = "Tabula: a libre spreadsheet app with the Microsoft Excel interface and functionality"
+authors = ["Ahmad A."]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/AhmAbd/LibreExcel"
+homepage = "https://github.com/AhmAbd/LibreExcel"
+keywords = ["spreadsheet", "excel", "xlsx", "egui", "office"]
+categories = ["gui", "visualization"]
+exclude = ["docs/", ".github/"]
 
 [[bin]]
 name = "tabula"

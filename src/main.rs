@@ -70,7 +70,23 @@ impl Tabula {
                 Ok("home") => a.page = Some(app::Page::Home),
                 Ok("format") => a.dialog = Some(dialogs::Dialog::format_cells(&a, 0)),
                 Ok("sort") => a.dialog = Some(dialogs::Dialog::sort(&a)),
+                Ok("pagesetup") => a.dialog = Some(dialogs::Dialog::page_setup(&a)),
+                Ok("about") => a.page = Some(app::Page::About),
                 _ => {}
+            }
+            if let Ok(t) = std::env::var("TABULA_SHOT_TAB") {
+                a.tab = match t.as_str() {
+                    "insert" => app::RTab::Insert,
+                    "pagelayout" => app::RTab::PageLayout,
+                    "formulas" => app::RTab::Formulas,
+                    "data" => app::RTab::Data,
+                    "review" => app::RTab::Review,
+                    "view" => app::RTab::View,
+                    _ => app::RTab::Home,
+                };
+            }
+            if let Some(p) = std::env::var("TABULA_SHOT_CELL").ok().and_then(|c| model::parse_cell(&c)) {
+                *a.sel_mut() = app::Sel::cell(p);
             }
         }
         Tabula { a, started: false }
@@ -79,7 +95,8 @@ impl Tabula {
     fn screenshot(&mut self, ctx: &egui::Context) {
         let Some((path, n)) = self.a.shot.clone() else { return };
         // Let fonts, layout and the first recalculation settle before taking the picture.
-        if n == 8 {
+        let at = std::env::var("TABULA_SHOT_FRAME").ok().and_then(|s| s.parse().ok()).unwrap_or(8);
+        if n == at {
             let slot = SHOT.clone();
             let c2 = ctx.clone();
             ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::ScreenshotCallback::new(move |img| {
