@@ -1,0 +1,31 @@
+[package]
+name = "tabula"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "tabula"
+path = "src/main.rs"
+
+[dependencies]
+eframe = { version = "0.37", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "glow", "links", "wayland", "x11", "persistence"] }
+egui = "0.37"
+image = { version = "0.25", default-features = false, features = ["png"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
+rfd = "0.18"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+stacker = "0.1"
+
+[profile.dev]
+opt-level = 1
+debug = false
+incremental = false
+
+[profile.dev.package."*"]
+opt-level = 2
+debug = false
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
